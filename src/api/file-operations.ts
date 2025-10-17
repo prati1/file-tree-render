@@ -80,11 +80,24 @@ export async function readINode(id: string = "root"): Promise<INode | null> {
 export async function searchFiles(query: string): Promise<Array<INode & { path: string }>> {
   const results: Array<INode & { path: string }> = [];
   const searchQuery = query.toLowerCase();
+
+  function buildPath(nodeId: string, currentPath: string): string {
+    const node = DATA.get(nodeId);
+    if (!node) return currentPath;
+    for (const [id, parentNode] of DATA.entries()) {
+      if (parentNode.type === "directory" && parentNode.children.includes(nodeId)) {
+        return buildPath(id, `${parentNode.name}/${currentPath}`);
+      }
+    }
+    return currentPath;
+  }
+
   for (const [id, node] of DATA.entries()) {
     if (node.name.toLowerCase().includes(searchQuery)) {
+      const fullPath = buildPath(id, node.name);
       results.push({
         ...node,
-        path: node.name
+        path: fullPath
       });
     }
   }
