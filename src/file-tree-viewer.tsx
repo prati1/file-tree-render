@@ -1,51 +1,87 @@
 import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 // API CALL TO USE
 import { readINode } from "./api/read-inode";
+import { useEffect, useState } from "react";
+import { INode } from "./types/file-types";
+
+const RenderFileTree: React.FC<{dirId: string}> = ({dirId = 'root'}) => {
+  const [fileTree, setFileTree] = useState<INode | null>(null);
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const getFileTrees = async () => {
+        if (nodeCache.has(dirId)) {
+          console.log("cache used");
+          setFileTree(nodeCache.get(dirId)!);
+          return;
+        }
+        const fileTrees = await readINode(dirId);
+        nodeCache.set(dirId, fileTrees!);
+        setFileTree(fileTrees);
+    }
+    getFileTrees();
+  }, [dirId]);
+
+  const handleFolderClick = () => {
+    if (fileTree?.type == "directory")
+    {
+      setExpanded(prev => !prev);
+    }
+  };
+
+
+  return (<>
+    <div style={{paddingLeft: 40}}>
+      <div onClick={handleFolderClick}
+      style={{cursor: fileTree?.type == 'directory' ? "pointer" : "default",}}
+      className="flex items-center gap-2 py-1 px-2 rounded-md">
+        {fileTree && fileTree.type === "directory" ? (
+            <>
+              {expanded ? (
+                <ChevronDownIcon className="h-4 w-4" />
+              ) : (
+                <ChevronRightIcon className="h-4 w-4" />
+              )}
+              {expanded ? (
+                <FolderOpenIcon className="h-5 w-5" />
+              ) : (
+                <FolderIcon className="h-5 w-5" />
+              )}
+              <span>{fileTree.name}</span>
+            </>
+          ) : (
+            <>
+              <FileIcon className="h-4 w-4" />
+              <span>{fileTree && fileTree.name}</span>
+            </>
+          )}
+
+      </div>
+
+      {fileTree?.type == 'directory' && fileTree.children?.length > 0 && expanded && fileTree.children.map((child) => {
+        return (
+          <>
+            <RenderFileTree key={`${fileTree.id}-${child}`} dirId = {child} />
+          </>
+        )
+      })}
+    </div>
+  </>)
+};
+
+const nodeCache = new Map<string, INode>();
 
 export function FileTreeViewer() {
-  // Here is your API call to use
-  // It returns a promise containing the directory based on the directory ID
-  console.log(readINode());
-  return (
-    <div className="bg-white rounded p-6 space-y-6">
-      <div className="grid">
-        <h1 className="text-lg font-medium">File Tree Viewer</h1>
-        <p className="max-w-md text-gray-500">
-          Create a file tree viewer component that displays a directory structure. The component should be able to
-          expand and collapse folders, and should display the file and folder icons.
-        </p>
-      </div>
 
-      <div className="grid">
-        <span className="text-base font-medium">Icons</span>
-        <p className="text-gray-500">For your convenience, here are the icons you can use</p>
-        <div className="flex items-center gap-2 mt-3">
-          <div className="flex items-center justify-center border rounded p-3">
-            <FileIcon className="h-5 w-5" />
+  return(<>
+  <div className="bg-white rounded p-6 space-y-6">
+    <div className="grid">
+      <h1 className="text-lg font-medium">File Tree Viewer</h1>
+          <div>
+            <RenderFileTree dirId={'root'}/>
           </div>
-          <div className="flex items-center justify-center border rounded p-3">
-            <FolderIcon className="h-5 w-5" />
-          </div>
-          <div className="flex items-center justify-center border rounded p-3">
-            <FolderOpenIcon className="h-5 w-5" />
-          </div>
-          <div className="flex items-center justify-center border rounded p-3">
-            <ChevronRightIcon className="h-5 w-5" />
-          </div>
-          <div className="flex items-center justify-center border rounded p-3">
-            <ChevronDownIcon className="h-5 w-5" />
-          </div>
-        </div>
-      </div>
-
-      <p className="max-w-md border-l-[3px] border-l-gray-300 pl-4 py-1 text-gray-500">
-        When you're ready, delete the contents of the
-        <br />
-        <code className="bg-gray-600 text-gray-100 font-medium px-1 py-0.5 rounded text-sm">
-          ./src/file-tree-viewer.tsx
-        </code>{" "}
-        file and start building.
-      </p>
     </div>
-  );
+    
+  </div>
+  </>)
 }

@@ -79,8 +79,15 @@ export async function readINode(id: string = "root"): Promise<INode | null> {
  */
 export async function searchFiles(query: string): Promise<Array<INode & { path: string }>> {
   const results: Array<INode & { path: string }> = [];
-
-  // TO DO
+  const searchQuery = query.toLowerCase();
+  for (const [id, node] of DATA.entries()) {
+    if (node.name.toLowerCase().includes(searchQuery)) {
+      results.push({
+        ...node,
+        path: node.name
+      });
+    }
+  }
   return results;
 }
 
@@ -96,12 +103,22 @@ export async function createFile(
   fileName: string, 
   fileExtension: string = ".txt"
 ): Promise<File> {
-  // TO DO
-  return  {
-    id: 'generated-id',
+  const newId = `${fileName}${fileExtension}`;
+  const newFile: File = {
+    id: newId,
     type: "file",
-    name: fileName
+    name: `${fileName}${fileExtension}`
+  };
+  DATA.set(newId, newFile);
+
+  const parent = DATA.get(parentId);
+  if (parent && parent.type === "directory") {
+    // Add file id to parent's children
+    parent.children = [...parent.children, newId];
+    DATA.set(parentId, parent);
   }
+
+  return newFile;
 }
 
 /**
@@ -111,13 +128,22 @@ export async function createFile(
  * @returns The created directory node
  */
 export async function createDirectory(parentId: string, dirName: string): Promise<Directory> {
-    // TO DO
-    return  {
-      id: 'generated-id',
+    const newId = dirName;
+    const newDir: Directory = {
+      id: newId,
       type: "directory",
       name: dirName,
       children: []
+    };
+    DATA.set(newId, newDir);
+
+    const parent = DATA.get(parentId);
+    if (parent && parent.type === "directory") {
+      // Add directory id to parent's children
+      parent.children = [...parent.children, newId];
+      DATA.set(parentId, parent);
     }
+    return newDir;
 }
 
 /**
@@ -128,7 +154,11 @@ export async function createDirectory(parentId: string, dirName: string): Promis
  */
 export async function renameNode(nodeId: string, newName: string): Promise<INode> {
   const node = DATA.get(nodeId);
-  // TO DO
+  if (node)
+  {
+    node.name = newName;
+    DATA.set(nodeId, node);
+  }
   return node!;
 }
 
@@ -138,7 +168,18 @@ export async function renameNode(nodeId: string, newName: string): Promise<INode
  * @returns Boolean indicating success
  */
 export async function deleteNode(nodeId: string): Promise<boolean> {
- // TO DO
+  const node = DATA.get(nodeId);
+  if (!node) {
+    return false;
+  }
+
+  if (node.type === "directory" && node.children.length > 0) {
+    for (const childId of node.children) {
+      await deleteNode(childId);
+    }
+  }
+
+  DATA.delete(nodeId);
   return true;
 }
 
