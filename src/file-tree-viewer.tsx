@@ -1,6 +1,6 @@
 import { ChevronDownIcon, ChevronRightIcon, FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react";
 // API CALL TO USE
-import { readINode } from "./api/read-inode";
+import { readINode, searchFiles } from "./api/read-inode";
 import { useEffect, useState } from "react";
 import { INode } from "./types/file-types";
 
@@ -73,6 +73,7 @@ const nodeCache = new Map<string, INode>();
 
 export function FileTreeViewer() {
 
+  console.log(searchFiles("comp"));
   return(<>
   <div className="bg-white rounded p-6 space-y-6">
     <div className="grid">
